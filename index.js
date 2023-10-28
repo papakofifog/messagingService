@@ -23,17 +23,23 @@ function sendMessageToReceiver(clientSocket,data){
 }
 
 function sendTypingStatus(clientSocket, status){
-    clientSocket.get(clientSocket).emit('typingStatus', false);
+    clients.get(clientSocket).emit('typingStatus', false);
+}
+
+function sendMessageEditedNotification(clientSocket, data){
+    clients.get(clientSocket).emit('messageEdited', data);
 }
 
 sio.on("connection", function(socket){
     socket.on('setUserId', async (msg)=> {
+        console.log(msg)
         if(msg !=""){
             clients.set(msg, socket) 
         }
     })
     // When a client sends a message
     socket.on('sendMessage', async (data)=> {
+        //console.log(data)
         let clientSocket= data.recipientId
         if (clients.has(clientSocket)) {
             //save chat 
@@ -45,6 +51,13 @@ sio.on("connection", function(socket){
         }
 
     });
+
+    socket.on('messageHasBeenEdited', (data)=>{
+        let clientSocket= data.recipient;
+        if (clients.has(clientSocket)){
+            sendMessageEditedNotification(clientSocket, data);
+        }
+    })
 
     socket.on('onTyping', (activeUserId)=>{
         console.log("hello")
