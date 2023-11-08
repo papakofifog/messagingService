@@ -22,12 +22,17 @@ function sendMessageToReceiver(clientSocket,data){
     clients.get(clientSocket).emit('receiveMessage', data)
 }
 
-function sendTypingStatus(clientSocket, status){
-    clients.get(clientSocket).emit('typingStatus', false);
+function sendTypingStatus(clientSocket, data){
+    clients.get(clientSocket).emit('typingStatus', data);
 }
 
 function sendMessageEditedNotification(clientSocket, data){
     clients.get(clientSocket).emit('messageEdited', data);
+}
+
+function sendMessageDeletedNotification(clientSocket, data){
+    console.log(data)
+    clients.get(clientSocket).emit('messageDeleted', data);
 }
 
 sio.on("connection", function(socket){
@@ -43,7 +48,7 @@ sio.on("connection", function(socket){
         let clientSocket= data.recipientId
         if (clients.has(clientSocket)) {
             //save chat 
-            console.log(data)
+            //console.log(data)
             sendMessageToReceiver(clientSocket,data);
         }else{
             
@@ -59,18 +64,22 @@ sio.on("connection", function(socket){
         }
     })
 
-    socket.on('onTyping', (activeUserId)=>{
-        console.log("hello")
-        if (clients.has(activeUserId)){
-            sendTypingStatus(activeUserId, true);
+    socket.on("messageHasBeenDeleted", (data)=>{
+        let clientSocket= data.recipient;
+        if (clients.has(clientSocket)){
+            sendMessageDeletedNotification(clientSocket, data);
         }
     })
 
-    socket.on ('stopedTyping', (activeUserId)=>{
-        if (clients.has(activeUserId)){
-            sendTypingStatus(activeUserId, false);
+    
+
+    socket.on('isTyping', (data)=>{
+        let clientSocket= data.recipient;
+        if (clients.has(clientSocket)){
+            sendTypingStatus(clientSocket, data);
         }
     })
+
 });
 
 server.listen(process.env.PORT)
