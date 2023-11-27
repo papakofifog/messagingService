@@ -8,6 +8,8 @@ const server = http.createServer(app);
 
 const clients = new Map();
 
+console.log(clients)
+
 app.use(cors({origin:'http://localhost:5173'}));
 
 const sio = Server(server, {
@@ -15,6 +17,12 @@ const sio = Server(server, {
         origin: "http://localhost:5173"
   }
 });
+
+function returnAllConnectedChats(req,res, next){
+    res.status(200).json(clients);
+}
+
+app.get('api/connectedUsers', returnAllConnectedChats)
 
 
 function sendMessageToReceiver(clientSocket,data){
@@ -26,13 +34,21 @@ function sendTypingStatus(clientSocket, data){
     clients.get(clientSocket).emit('typingStatus', data);
 }
 
+function sendStopedTypingStatus(clientSocket, data){
+    clients.get(clientSocket).emit('stopedTypingStatus', data);
+}
+
 function sendMessageEditedNotification(clientSocket, data){
     clients.get(clientSocket).emit('messageEdited', data);
 }
 
 function sendMessageDeletedNotification(clientSocket, data){
-    console.log(data)
     clients.get(clientSocket).emit('messageDeleted', data);
+}
+
+function friendRequestNotification(clientSocket, data){
+    console.log(data);
+    clients.get(clientSocket).emit('newNotification',data);
 }
 
 sio.on("connection", function(socket){
@@ -77,6 +93,23 @@ sio.on("connection", function(socket){
         let clientSocket= data.recipient;
         if (clients.has(clientSocket)){
             sendTypingStatus(clientSocket, data);
+        }
+    })
+
+    socket.on('stopedTyping', (data)=>{
+        let clientSocket= data.recipient;
+        if (clients.has(clientSocket)){
+            sendStopedTypingStatus(clientSocket, data);
+        }
+    });
+
+    
+
+    socket.on('notifyFriend', (data)=>{
+        console.log(data);
+        let clientSocket= data.recipient;
+        if(clients.has(clientSocket)){
+            friendRequestNotification(clientSocket,data);
         }
     })
 
